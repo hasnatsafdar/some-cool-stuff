@@ -1,0 +1,22 @@
+# GitHub SSH Setup for Git (Step-by-Step One-Liner Style)
+
+### Step 1: Generate SSH key (press Enter 3 times when prompted)
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+### Step 2: Start ssh-agent in background
+eval "$(ssh-agent -s)"
+
+### Step 3: Add the SSH private key to the agent
+ssh-add ~/.ssh/id_ed25519
+
+### Step 4: Show your public key (copy this to GitHub → Settings → SSH & GPG Keys)
+cat ~/.ssh/id_ed25519.pub
+
+### Step 5: Inside your project directory, switch remote URL from HTTPS to SSH
+git remote set-url origin git@github.com:hasnatsafdar/practice-nd-stuff.git
+
+### Step 6: Verify the new remote is set to SSH
+git remote -v
+
+### Step 7: Push your code using SSH (no password needed now)
+git push -u origin master
