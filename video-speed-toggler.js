@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Video Speed Toggle (Compact)
+// @name         Video Speed Toggle
 // @namespace    http://tampermonkey.net/
 // @version      0.2
 // @description  Toggle video playback speed with minimal code
