@@ -1,45 +1,75 @@
 // ==UserScript==
-// @name         Video Speed Toggle
+// @name         YT Speed Stepper (., ,)
 // @namespace    http://tampermonkey.net/
-// @version      0.2
-// @description  Toggle video playback speed with minimal code
-// @match        *://*/*
+// @version      1.2
+// @description  Use "." and "," to step YouTube playback speed with a minimalist popup (wraps). Mimics native style.
+// @match        https://www.youtube.com/*
 // @grant        none
+// @run-at       document-idle
 // ==/UserScript==
 
-(function(){
-    'use strict';
-    const speeds={
-        ',':[1,1.5,2],
-        '.':[3,5,7]
-    };
-    const idx={',':0,'.':0};
+(() => {
+  const speeds = [1,1.25,1.5,1.75,2,2.5,3,4,5];
+  let popupTimer = 0;
 
-    document.addEventListener('keydown', e => {
-        const key=e.key;
-        const list=speeds[key];
-        if(!list) return;
-        const video=document.querySelector('video');
-        if(!video) return;
-        const i=idx[key] % list.length;
-        const rate=list[i];
-        video.playbackRate=rate;
-        idx[key]++;
-        showPopup(`Speed: ${rate}x`);
-    });
+  const qVid = () => [...document.querySelectorAll('video')].find(v => v && v.readyState && v.offsetParent !== null);
 
-    function showPopup(txt){
-        const old=document.getElementById('speedPopup');
-        if(old) old.remove();
-        const p=document.createElement('div');
-        p.id='speedPopup';
-        Object.assign(p.style,{
-            position:'fixed', bottom:'20px', right:'20px',
-            padding:'6px 10px', background:'rgba(0,0,0,0.7)',
-            color:'#fff', fontSize:'12px', borderRadius:'3px', zIndex:9999
-        });
-        p.textContent=txt;
-        document.body.appendChild(p);
-        setTimeout(()=>p.remove(),1000);
+  const show = (txt) => {
+    let p = document.getElementById('tm-speed-popup');
+    if(!p){
+      p = document.createElement('div'); p.id='tm-speed-popup';
+      Object.assign(p.style,{
+        position:'absolute',zIndex:999999,transform:'translate(-50%,-50%)',
+        left:'50%',top:'50%',padding:'6px 10px',fontSize:'14px',fontWeight:500,
+        color:'#fff',background:'rgba(0,0,0,0.85)',borderRadius:'4px',
+        pointerEvents:'none',opacity:0,transition:'opacity 120ms'
+      });
+      document.body.appendChild(p);
     }
+    p.textContent = txt;
+    const rect = (qVid()?.getBoundingClientRect?.() || {left:0,top:0,width:window.innerWidth,height:window.innerHeight});
+    p.style.left = (rect.left + rect.width/2) + 'px';
+    p.style.top  = (rect.top + rect.height*0.18) + 'px';
+    p.style.opacity = 1;
+    clearTimeout(popupTimer);
+    popupTimer = setTimeout(()=> p.style.opacity = 0, 900);
+  };
+
+  const step = (dir) => {
+    const v = qVid();
+    if(!v) return;
+    const cur = v.playbackRate;
+    if(dir === 1){ // forward: first speed > cur, else wrap to speeds[0]
+      const nxt = speeds.find(s=>s - cur > 0.015) ?? speeds[0];
+      v.playbackRate = nxt;
+      show(nxt + '×');
+    } else { // backward: last speed < cur, else wrap to last
+      const prev = [...speeds].reverse().find(s=> cur - s > 0.015) ?? speeds[speeds.length-1];
+      v.playbackRate = prev;
+      show(prev + '×');
+    }
+  };
+
+  window.addEventListener('keydown', e => {
+    if(e.repeat) return;
+    const t = document.activeElement;
+    if(t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.isContentEditable)) return;
+    if(e.key === '.' || e.key === '>'){ // "." (shift+.) can be ">"
+      e.preventDefault(); e.stopPropagation();
+      step(1);
+    } else if(e.key === ',' || e.key === '<'){
+      e.preventDefault(); e.stopPropagation();
+      step(-1);
+    }
+  }, true);
+
+  // Keep popup positioned on navigation / player resize
+  new MutationObserver(()=> {
+    const p = document.getElementById('tm-speed-popup');
+    if(p && p.style.opacity>0) {
+      const rect = (qVid()?.getBoundingClientRect?.() || {left:0,top:0,width:window.innerWidth,height:window.innerHeight});
+      p.style.left = (rect.left + rect.width/2) + 'px';
+      p.style.top  = (rect.top + rect.height*0.18) + 'px';
+    }
+  }).observe(document.documentElement, {childList: true, subtree: true});
 })();
