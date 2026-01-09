@@ -1,0 +1,6 @@
+### Sometimes KVM give a historical permissions problem and you think I should run "sudo virt-manager". Stop. Do this.
+ls -l /usr/bin/virt-manager
+##### Owned by root? Like
+-rwxr-xr-x 1 root root 145 Aug  1  2024 /usr/bin/virt-manager
+##### Fine. Run
+sudo chown -R hxt:users virt-manager
